@@ -1,24 +1,37 @@
-
-
 pipeline {
     agent any
 
     environment {
-    BRANCH_NAME = sh(script: "git rev-parse --abbrev-ref HEAD | sed 's/origin\\///'", returnStdout: true).trim()
-}
-
-
-    environment {
         DOCKER_HUB_USER = "sipserver2021@gmail.com"
-        DOCKER_HUB_CRED = "dockerhub-creds01"    // Jenkins Credentials ID
+        DOCKER_HUB_CRED = "dockerhub-creds01"   // Jenkins Credentials ID
     }
 
     stages {
 
         stage('Checkout Code') {
             steps {
-                git branch: "${BRANCH_NAME}",
-                    url: 'https://github.com/sridhar20ece/devops-build.git'
+                // Checkout main/dev automatically depending on webhook
+                checkout([
+                    $class: 'GitSCM',
+                    branches: [[name: "*/${env.GIT_BRANCH ?: 'main'}"]],
+                    userRemoteConfigs: [[
+                        url: 'https://github.com/sridhar20ece/devops-build.git',
+                        credentialsId: 'git_PAT01'
+                    ]]
+                ])
+            }
+        }
+
+        stage('Determine Branch') {
+            steps {
+                script {
+                    BRANCH_NAME = sh(
+                        script: "git rev-parse --abbrev-ref HEAD",
+                        returnStdout: true
+                    ).trim()
+
+                    echo "Detected branch: ${BRANCH_NAME}"
+                }
             }
         }
 
@@ -42,29 +55,29 @@ pipeline {
             }
         }
 
-stage('Push Docker Image') {
-    steps {
-        script {
-            def IMAGE = readFile('image_tag.txt').trim()
-            echo "Pushing Docker image: ${IMAGE}"
+        stage('Push Docker Image') {
+            steps {
+                script {
+                    def IMAGE = readFile('image_tag.txt').trim()
+                    echo "Pushing Docker image: ${IMAGE}"
 
-            sh "docker push ${IMAGE}"
+                    sh "docker push ${IMAGE}"
 
-            echo "Tagging latest..."
-            sh """
-                BASE_IMAGE=\$(echo ${IMAGE} | cut -d':' -f1)
-                docker tag ${IMAGE} \$BASE_IMAGE:latest
-                docker push \$BASE_IMAGE:latest
-            """
+                    echo "Tagging latest..."
+                    sh """
+                        BASE_IMAGE=$(echo ${IMAGE} | cut -d':' -f1)
+                        docker tag ${IMAGE} $BASE_IMAGE:latest
+                        docker push $BASE_IMAGE:latest
+                    """
+                }
+            }
         }
-    }
-}
 
         stage('Deploy Container') {
             when {
                 anyOf {
-                    branch 'dev'
-                    branch 'main'
+                    branch "main"
+                    branch "dev"
                 }
             }
             steps {
