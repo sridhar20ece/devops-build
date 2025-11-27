@@ -2,32 +2,29 @@ pipeline {
     agent any
 
     stages {
+           steps {
+        script {
+            // Detect branch from Jenkins env or git
+            def branch = env.BRANCH_NAME ?: env.GIT_BRANCH ?: sh(
+                script: "git rev-parse --abbrev-ref HEAD",
+                returnStdout: true
+            ).trim()
 
-        stage("Detect Branch") {
-            steps {
-                script {
+            echo "Raw branch detected: ${branch}"
 
-                    // Detect branch from multiple possible Jenkins variables
-                    def branch = env.BRANCH_NAME ?: env.GIT_BRANCH ?: sh(
-                        script: "git rev-parse --abbrev-ref HEAD",
-                        returnStdout: true
-                    ).trim()
+            // Remove "origin/" if present
+            branch = branch.replaceAll("origin/", "").trim()
 
-                    echo "Detected branch: ${branch}"
+            echo "Normalized branch: ${branch}"
 
-                    if (branch == "HEAD") {
-                        error "❌ Cannot detect branch. Check GitHub webhook + Jenkins job type."
-                    }
-
-                    // Save branch for later stages
-                    env.ACTUAL_BRANCH = branch
-
-                    if (branch != "dev" && branch != "master") {
-                        error "❌ Only dev or master allowed."
-                    }
-                }
+            if (branch != "dev" && branch != "master") {
+                error "❌ Only dev or master allowed."
             }
+
+            env.ACTUAL_BRANCH = branch
         }
+    }
+}
 
         stage("Checkout") {
             steps {
