@@ -32,6 +32,6 @@ docker build -t "$IMAGE" .
 
 # Export image tag for Jenkins pipeline
 echo "$IMAGE" > image.txt
-
+echo "Progress to Complete..................."
 echo "✔ Build Completed!"
 echo "✔ Image saved to image.txt"
