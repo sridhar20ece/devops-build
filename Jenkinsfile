@@ -2,53 +2,70 @@ pipeline {
     agent any
 
     environment {
-        IMAGE_NAME = "sridhar20ece/devops-build"
-    }
-
-    parameters {
-        string(name: 'BRANCH_NAME', defaultValue: 'dev', description: 'Branch to build and deploy (dev or prod)')
+        DOCKER_HUB_USER = "sipserver2021@gmail.com"
+        DOCKER_HUB_CRED = "dockerhub-pass"    // Jenkins Credentials ID
     }
 
     stages {
+
         stage('Checkout Code') {
             steps {
-                echo "Checking out branch: ${params.BRANCH_NAME}"
-                git branch: "${params.BRANCH_NAME}", url: 'https://github.com/sridhar20ece/devops-build.git'
+                git branch: "${BRANCH_NAME}",
+                    url: 'https://github.com/sridhar20ece/devops-build.git'
             }
         }
 
         stage('Build Docker Image') {
             steps {
-                echo "Building Docker image..."
-                sh "./build.sh ${params.BRANCH_NAME}"
+                script {
+                    echo "Building image for branch: ${BRANCH_NAME}"
+                    sh "chmod +x build.sh"
+                    sh "./build.sh ${BRANCH_NAME}"
+                }
+            }
+        }
+
+        stage('Docker Login') {
+            steps {
+                withCredentials([string(credentialsId: DOCKER_HUB_CRED, variable: 'DOCKER_PASS')]) {
+                    sh '''
+                        echo "$DOCKER_PASS" | docker login -u "${DOCKER_HUB_USER}" --password-stdin
+                    '''
+                }
             }
         }
 
         stage('Push Docker Image') {
             steps {
-                withCredentials([usernamePassword(credentialsId: 'dockerhub-creds', 
-                                                  usernameVariable: 'DOCKER_USER', 
-                                                  passwordVariable: 'DOCKER_PASS')]) {
-                    sh "echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin"
-                    sh "docker push ${IMAGE_NAME}:${params.BRANCH_NAME}"
+                script {
+                    def IMAGE = readFile('image_tag.txt').trim()
+                    echo "Pushing Docker image: ${IMAGE}"
+                    sh "docker push ${IMAGE}"
+
+                    echo "Tagging latest..."
+                    sh """
+                        docker tag ${IMAGE} ${IMAGE%:*}:latest
+                        docker push ${IMAGE%:*}:latest
+                    """
                 }
             }
         }
 
-        stage('Deploy Docker Container') {
-            steps {
-                echo "Deploying Docker container..."
-                sh "./deploy.sh ${params.BRANCH_NAME}"
+        stage('Deploy Container') {
+            when {
+                anyOf {
+                    branch 'dev'
+                    branch 'main'
+                }
             }
-        }
-    }
-
-    post {
-        success {
-            echo "Pipeline completed successfully for branch: ${params.BRANCH_NAME}!"
-        }
-        failure {
-            echo "Pipeline failed. Check logs for branch: ${params.BRANCH_NAME}!"
+            steps {
+                script {
+                    def IMAGE = readFile('image_tag.txt').trim()
+                    echo "Deploying container using image: ${IMAGE}"
+                    sh "chmod +x deploy.sh"
+                    sh "./deploy.sh ${IMAGE}"
+                }
+            }
         }
     }
 }
