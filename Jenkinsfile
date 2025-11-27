@@ -5,9 +5,11 @@ pipeline {
 
         stage("Checkout") {
             steps {
-                echo "Checking out code..."
-                checkout([$class: 'GitSCM',
-                    branches: [[name: "*/${env.BRANCH_NAME}"]],
+                echo "Checking out all branches..."
+
+                checkout([
+                    $class: 'GitSCM',
+                    branches: [[name: "**"]],   // checkout all branches
                     userRemoteConfigs: [[
                         url: 'https://github.com/sridhar20ece/devops-build.git',
                         credentialsId: 'git_PAT01'
@@ -19,11 +21,15 @@ pipeline {
         stage("Detect Branch") {
             steps {
                 script {
-                    def BRANCH = sh(script: "git rev-parse --abbrev-ref HEAD", returnStdout: true).trim()
-                    echo "Detected branch after checkout: ${BRANCH}"
+                    def BRANCH = sh(
+                        script: "git rev-parse --abbrev-ref HEAD",
+                        returnStdout: true
+                    ).trim()
+
+                    echo "Detected branch: ${BRANCH}"
 
                     if (BRANCH != "dev" && BRANCH != "prod") {
-                        error "❌ Not allowed. Only dev or prod branch can trigger this pipeline."
+                        error "❌ Only dev or prod branch can trigger this pipeline."
                     }
 
                     env.ACTUAL_BRANCH = BRANCH
@@ -58,7 +64,7 @@ pipeline {
     }
 
     post {
-        success { echo "✔ Successfully built and pushed image!" }
-        failure { echo "❌ Pipeline failed." }
+        success { echo "✔ Successfully built and pushed!" }
+        failure { echo "❌ Pipeline failed!" }
     }
 }
