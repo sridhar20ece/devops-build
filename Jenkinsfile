@@ -2,8 +2,7 @@ pipeline {
     agent any
 
     environment {
-        DOCKER_USER = credentials('dockerhub-user')
-        DOCKER_PASS = credentials('dockerhub-pass')
+        DOCKER_CREDS = credentials('dockerhub-user')   // username + password
     }
 
     stages {
@@ -12,22 +11,22 @@ pipeline {
             steps {
                 checkout scm
                 script {
-                    BRANCH = env.GIT_BRANCH.replace("origin/", "")
-                    echo "Building for branch: ${BRANCH}"
+                    env.BRANCH = env.GIT_BRANCH.replace("origin/", "")
+                    echo "Building for branch: ${env.BRANCH}"
                 }
             }
         }
 
         stage('Build Docker Image') {
             steps {
-                sh "./build.sh ${BRANCH}"
+                sh "./build.sh ${env.BRANCH}"
             }
         }
 
         stage('Docker Login') {
             steps {
                 sh """
-                echo "${DOCKER_PASS}" | docker login -u "${DOCKER_USER}" --password-stdin
+                    echo "${DOCKER_CREDS_PSW}" | docker login -u "${DOCKER_CREDS_USR}" --password-stdin
                 """
             }
         }
@@ -35,12 +34,12 @@ pipeline {
         stage('Push Docker Image') {
             steps {
                 script {
-                    IMAGE_TAG = sh(
+                    env.IMAGE_TAG = sh(
                         script: "cat image_tag.txt",
                         returnStdout: true
                     ).trim()
 
-                    sh "docker push ${IMAGE_TAG}"
+                    sh "docker push ${env.IMAGE_TAG}"
                 }
             }
         }
@@ -54,7 +53,9 @@ pipeline {
 
     post {
         always {
-            sh "docker logout"
+            node {                   // FIX: ensures workspace exists
+                sh "docker logout"
+            }
         }
     }
 }
