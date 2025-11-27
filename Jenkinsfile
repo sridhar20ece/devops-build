@@ -2,73 +2,53 @@ pipeline {
     agent any
 
     environment {
-        DOCKER_USER = "sipserver"
-        DEV_IP = "<DEV_EC2_PUBLIC_IP>"
-        PROD_IP = "<PROD_EC2_PUBLIC_IP>"
+        IMAGE_NAME = "sridhar20ece/devops-build"
+    }
+
+    parameters {
+        string(name: 'BRANCH_NAME', defaultValue: 'dev', description: 'Branch to build and deploy (dev or prod)')
     }
 
     stages {
-
-        stage('Checkout') {
+        stage('Checkout Code') {
             steps {
-                checkout scm
+                echo "Checking out branch: ${params.BRANCH_NAME}"
+                git branch: "${params.BRANCH_NAME}", url: 'https://github.com/sridhar20ece/devops-build.git'
             }
         }
 
         stage('Build Docker Image') {
             steps {
-                sh "./build.sh"
+                echo "Building Docker image..."
+                sh "./build.sh ${params.BRANCH_NAME}"
             }
         }
 
-        stage('Docker Login') {
+        stage('Push Docker Image') {
             steps {
-                withCredentials([usernamePassword(
-                    credentialsId: 'dockerhub-creds',
-                    usernameVariable: 'USER',
-                    passwordVariable: 'PASS'
-                )]) {
-                    sh "echo $PASS | docker login -u $USER --password-stdin"
+                withCredentials([usernamePassword(credentialsId: 'dockerhub-creds', 
+                                                  usernameVariable: 'DOCKER_USER', 
+                                                  passwordVariable: 'DOCKER_PASS')]) {
+                    sh "echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin"
+                    sh "docker push ${IMAGE_NAME}:${params.BRANCH_NAME}"
                 }
             }
         }
 
-        stage('Push to DockerHub') {
+        stage('Deploy Docker Container') {
             steps {
-                script {
-                    IMAGE = sh(script: "cat image.txt", returnStdout: true).trim()
-                    BRANCH = sh(script: "git rev-parse --abbrev-ref HEAD", returnStdout: true).trim()
-
-                    if (BRANCH == "dev") {
-                        sh "docker push ${IMAGE}"
-                    }
-
-                    if (BRANCH == "master") {
-                        sh "docker push ${IMAGE}"
-                        sh """
-                           docker tag ${IMAGE} ${DOCKER_USER}/prodrepo:latest
-                           docker push ${DOCKER_USER}/prodrepo:latest
-                           """
-                    }
-                }
+                echo "Deploying Docker container..."
+                sh "./deploy.sh ${params.BRANCH_NAME}"
             }
         }
+    }
 
-        stage('Deploy to Server') {
-            steps {
-                script {
-                    IMAGE = sh(script: "cat image.txt", returnStdout: true).trim()
-                    BRANCH = sh(script: "git rev-parse --abbrev-ref HEAD", returnStdout: true).trim()
-
-                    if (BRANCH == "dev") {
-                        sh "./deploy.sh ${DEV_IP} ${IMAGE} 3000"
-                    }
-
-                    if (BRANCH == "master") {
-                        sh "./deploy.sh ${PROD_IP} ${IMAGE} 80"
-                    }
-                }
-            }
+    post {
+        success {
+            echo "Pipeline completed successfully for branch: ${params.BRANCH_NAME}!"
+        }
+        failure {
+            echo "Pipeline failed. Check logs for branch: ${params.BRANCH_NAME}!"
         }
     }
 }
