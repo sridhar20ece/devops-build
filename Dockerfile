@@ -1,19 +1,17 @@
-# Use a stable Node image (change if your app is Python/Java)
-FROM node:18-alpine
+FROM ubuntu:latest
 
-WORKDIR /app
+ENV DEBIAN_FRONTEND=noninteractive
 
-# Copy package files first (better caching)
-COPY package*.json ./
+RUN apt-get update && \
+    apt-get install -y apache2 && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
 
-RUN npm install --production
+COPY ./build/ /var/www/html/
 
-# Copy source code
-COPY . .
+RUN chown -R www-data:www-data /var/www/html/
 
-# Expose port (app port)
 EXPOSE 80
 
-# Start application
-CMD ["npm", "start"]
+CMD ["apache2ctl", "-D", "FOREGROUND"]
 
