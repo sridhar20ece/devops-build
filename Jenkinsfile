@@ -3,34 +3,31 @@ pipeline {
 
     stages {
 
-        stage("Detect Branch") {
-            steps {
-                script {
-                    // Detect branch from Git (works for webhook-triggered pipeline jobs)
-                    BRANCH = sh(script: "git rev-parse --abbrev-ref HEAD", returnStdout: true).trim()
-
-                    echo "Detected branch: ${BRANCH}"
-
-                    // Allow ONLY dev or prod
-                    if (BRANCH != "dev" && BRANCH != "prod") {
-                        error "❌ Not allowed. Pipeline can run only for dev or prod branch."
-                    }
-
-                    // Save branch to environment
-                    env.ACTUAL_BRANCH = BRANCH
-                }
-            }
-        }
-
         stage("Checkout") {
             steps {
+                echo "Checking out code..."
                 checkout([$class: 'GitSCM',
-                    branches: [[name: "*/${env.ACTUAL_BRANCH}"]],
+                    branches: [[name: "*/${env.BRANCH_NAME}"]],
                     userRemoteConfigs: [[
                         url: 'https://github.com/sridhar20ece/devops-build.git',
                         credentialsId: 'git_PAT01'
                     ]]
                 ])
+            }
+        }
+
+        stage("Detect Branch") {
+            steps {
+                script {
+                    def BRANCH = sh(script: "git rev-parse --abbrev-ref HEAD", returnStdout: true).trim()
+                    echo "Detected branch after checkout: ${BRANCH}"
+
+                    if (BRANCH != "dev" && BRANCH != "prod") {
+                        error "❌ Not allowed. Only dev or prod branch can trigger this pipeline."
+                    }
+
+                    env.ACTUAL_BRANCH = BRANCH
+                }
             }
         }
 
