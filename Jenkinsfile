@@ -9,7 +9,7 @@ pipeline {
     environment {
         DEV_REPO = "sipserver/devrepo"
         PROD_REPO = "sipserver/prodrepo"
-        DOCKER_CREDENTIALS = "docker_hub_cred" // Jenkins credential ID for DockerHub login
+        DOCKER_CREDENTIALS = "dockerhub-creds01" // Jenkins credential ID for DockerHub login
     }
 
     stages {
