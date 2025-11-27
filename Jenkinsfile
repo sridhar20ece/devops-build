@@ -1,5 +1,12 @@
+
+
 pipeline {
     agent any
+
+    environment {
+    BRANCH_NAME = sh(script: "git rev-parse --abbrev-ref HEAD | sed 's/origin\\///'", returnStdout: true).trim()
+}
+
 
     environment {
         DOCKER_HUB_USER = "sipserver2021@gmail.com"
