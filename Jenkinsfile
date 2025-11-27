@@ -10,12 +10,17 @@ pipeline {
 
         stage('Run build.sh') {
             steps {
-                sh 'chmod +x build.sh'
-                sh './build.sh'
+                sh """
+                    chmod +x build.sh
+                    BRANCH_NAME=${env.BRANCH_NAME} ./build.sh
+                """
             }
         }
 
         stage('Docker Login') {
+            when {
+                expression { fileExists('image.txt') }
+            }
             steps {
                 withCredentials([usernamePassword(credentialsId: 'dockerhub-creds',
                                                  usernameVariable: 'USER',
@@ -26,6 +31,9 @@ pipeline {
         }
 
         stage('Push Image') {
+            when {
+                expression { fileExists('image.txt') }
+            }
             steps {
                 sh '''
                     IMAGE=$(cat image.txt)
