@@ -2,11 +2,11 @@ pipeline {
     agent any
 
     environment {
+        // This assumes you created a "Username with password" credential in Jenkins
         DOCKER_CREDS = credentials('dockerhub-user')
     }
 
     stages {
-
         stage('Checkout') {
             steps {
                 checkout scm
@@ -51,4 +51,10 @@ pipeline {
         }
     }
 
-    post
+    post {
+        always {
+            // Agent already applied; just run sh directly
+            sh "docker logout"
+        }
+    }
+}
