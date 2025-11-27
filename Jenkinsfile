@@ -35,21 +35,23 @@ pipeline {
             }
         }
 
-        stage('Push Docker Image') {
-            steps {
-                script {
-                    def IMAGE = readFile('image_tag.txt').trim()
-                    echo "Pushing Docker image: ${IMAGE}"
-                    sh "docker push ${IMAGE}"
+stage('Push Docker Image') {
+    steps {
+        script {
+            def IMAGE = readFile('image_tag.txt').trim()
+            echo "Pushing Docker image: ${IMAGE}"
 
-                    echo "Tagging latest..."
-                    sh """
-                        docker tag ${IMAGE} ${IMAGE%:*}:latest
-                        docker push ${IMAGE%:*}:latest
-                    """
-                }
-            }
+            sh "docker push ${IMAGE}"
+
+            echo "Tagging latest..."
+            sh """
+                BASE_IMAGE=\$(echo ${IMAGE} | cut -d':' -f1)
+                docker tag ${IMAGE} \$BASE_IMAGE:latest
+                docker push \$BASE_IMAGE:latest
+            """
         }
+    }
+}
 
         stage('Deploy Container') {
             when {
