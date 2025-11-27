@@ -19,7 +19,7 @@ pipeline {
 
                     echo "Normalized branch: ${branch}"
 
-                    if (branch != "dev" && branch != "master") {
+                    if (!(branch in ["dev", "master", "prod"])) {
                         error "❌ Only dev or master allowed."
                     }
 
