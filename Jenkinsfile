@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     environment {
-        DOCKER_CREDS = credentials('dockerhub-user')   // username + password
+        DOCKER_CREDS = credentials('dockerhub-user')
     }
 
     stages {
@@ -51,11 +51,4 @@ pipeline {
         }
     }
 
-    post {
-        always {
-            node {                   // FIX: ensures workspace exists
-                sh "docker logout"
-            }
-        }
-    }
-}
+    post
