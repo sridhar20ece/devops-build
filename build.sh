@@ -24,5 +24,5 @@ echo "Building Docker Image....!!!!"
 echo "============================="
 echo "*********END+++++****************"
 echo "Build Completed!"
-echo "*********END+++++****************"
+echo "Docker Pushed to Repo"
 echo "$IMAGE" > image.txt   # Export for Jenkins use
