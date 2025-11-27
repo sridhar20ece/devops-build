@@ -23,4 +23,5 @@ docker build -t $IMAGE .
 echo "Building Docker Image....!!!!"
 echo "============================="
 echo "Build Completed!"
+echo "**********+++++++++++****************"
 echo "$IMAGE" > image.txt   # Export for Jenkins use
