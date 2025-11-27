@@ -2,29 +2,31 @@ pipeline {
     agent any
 
     stages {
-           steps {
-        script {
-            // Detect branch from Jenkins env or git
-            def branch = env.BRANCH_NAME ?: env.GIT_BRANCH ?: sh(
-                script: "git rev-parse --abbrev-ref HEAD",
-                returnStdout: true
-            ).trim()
 
-            echo "Raw branch detected: ${branch}"
+        stage("Detect Branch") {
+            steps {
+                script {
+                    // Detect branch from Jenkins env or git
+                    def branch = env.BRANCH_NAME ?: env.GIT_BRANCH ?: sh(
+                        script: "git rev-parse --abbrev-ref HEAD",
+                        returnStdout: true
+                    ).trim()
 
-            // Remove "origin/" if present
-            branch = branch.replaceAll("origin/", "").trim()
+                    echo "Raw branch detected: ${branch}"
 
-            echo "Normalized branch: ${branch}"
+                    // Remove "origin/" if present
+                    branch = branch.replaceAll("origin/", "").trim()
 
-            if (branch != "dev" && branch != "master") {
-                error "❌ Only dev or master allowed."
+                    echo "Normalized branch: ${branch}"
+
+                    if (branch != "dev" && branch != "master") {
+                        error "❌ Only dev or master allowed."
+                    }
+
+                    env.ACTUAL_BRANCH = branch
+                }
             }
-
-            env.ACTUAL_BRANCH = branch
         }
-    }
-}
 
         stage("Checkout") {
             steps {
