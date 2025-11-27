@@ -1,0 +1,27 @@
+# Node dependencies
+node_modules/
+npm-debug.log
+
+# Logs
+*.log
+logs/
+debug.log
+
+# OS files
+.DS_Store
+
+# Docker build files
+image.txt
+
+# Environment files
+.env
+.env.*
+
+# IDE files
+.vscode/
+.idea/
+
+# Build artifacts
+dist/
+build/
+
