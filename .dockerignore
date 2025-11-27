@@ -8,6 +8,5 @@ Dockerfile
 *.log
 .env
 dist
-build
 image.txt
 README.md
