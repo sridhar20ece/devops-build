@@ -3,7 +3,7 @@ pipeline {
 
     environment {
         DOCKER_HUB_USER = "sipserver2021@gmail.com"
-        DOCKER_HUB_CRED = "dockerhub-pass"    // Jenkins Credentials ID
+        DOCKER_HUB_CRED = "dockerhub-creds01"    // Jenkins Credentials ID
     }
 
     stages {
