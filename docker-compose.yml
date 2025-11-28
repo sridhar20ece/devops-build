@@ -1,0 +1,13 @@
+version: "3.9"
+
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: apache_web
+    ports:
+      - "80:80"
+    restart: unless-stopped
+    volumes:
+      - ./build:/var/www/html  # Optional: live sync during development

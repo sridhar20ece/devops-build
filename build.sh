@@ -1,37 +1,21 @@
 #!/bin/bash
+SERVER_IP=$1
+SSH_USER=$2
+SSH_KEY=$3
 
-DOCKER_USER="sipserver"
+IMAGE=$(cat image.txt)
 
-# Detect branch from Jenkins or Git
-if [[ -n "$BRANCH_NAME" && "$BRANCH_NAME" != "null" ]]; then
-    BRANCH="$BRANCH_NAME"
-else
-    BRANCH=$(git rev-parse --abbrev-ref HEAD)
-fi
+echo "Deploying $IMAGE to $SERVER_IP"
 
-# Auto tag using timestamp
-TAG=$(date +%s)
+ssh -o StrictHostKeyChecking=no -i $SSH_KEY $SSH_USER@$SERVER_IP <<EOF
 
-echo "Current Branch: $BRANCH"
+    echo "Pulling image..."
+    docker pull $IMAGE
 
-# Select Docker repo based on branch
-if [[ "$BRANCH" == "dev" ]]; then
-    IMAGE="$DOCKER_USER/devrepo:$TAG"
+    echo "Stopping old container..."
+    docker rm -f devapp || true
 
-elif [[ "$BRANCH" == "master" || "$BRANCH" == "prod" ]]; then
-    IMAGE="$DOCKER_USER/prodrepo:$TAG"
+    echo "Starting new container..."
+    docker run -d --name devapp -p 80:80 $IMAGE
 
-else
-    echo "❌ Unknown branch: $BRANCH"
-    echo "Only 'dev' or 'master/prod' branches are allowed."
-    exit 1
-fi
-
-echo "Building Docker Image: $IMAGE"
-docker build -t "$IMAGE" .
-
-# Export image tag for Jenkins pipeline
-echo "$IMAGE" > image.txt
-echo "Progress to Complete..................."
-echo "✔ Build Completed!"
-echo "✔ Image saved to image.txt"
+EOF
