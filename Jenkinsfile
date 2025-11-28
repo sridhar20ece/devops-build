@@ -69,46 +69,40 @@ pipeline {
         }
 
         stage("Deploy using deploy.sh") {
-            when {
-                expression { env.ACTUAL_BRANCH == "dev" }
-            }
+            when { expression { env.ACTUAL_BRANCH == "dev" } }
             steps {
                 withCredentials([sshUserPrivateKey(
                     credentialsId: 'dev-server-ssh-key',
                     keyFileVariable: 'SSH_KEY',
                     usernameVariable: 'SSH_USER'
                 )]) {
-
                     sh """
                         chmod +x deploy.sh
-                        echo "Deploying using deploy.sh to 172.31.22.3 ..."
-                        ./deploy.sh 172.31.22.3 \$SSH_USER \$SSH_KEY
+                        IMAGE=$(cat image.txt)
+                        ./deploy.sh 172.31.22.3 \$IMAGE 80 \$SSH_KEY
                     """
                 }
             }
         }
 
         stage("Deploy using docker-compose") {
-            when {
-                expression { env.ACTUAL_BRANCH == "dev" }
-            }
+            when { expression { env.ACTUAL_BRANCH == "dev" } }
             steps {
                 script {
                     def remoteHost = "ubuntu@172.31.22.3"
 
                     sshagent(['ssh-key-01']) {
-
                         sh """
                             echo "📌 Copying docker-compose.yml to remote server..."
                             scp -o StrictHostKeyChecking=no docker-compose.yml ${remoteHost}:/home/ubuntu/
 
                             echo "📌 Deploying latest Docker image via docker-compose..."
-                            ssh -o StrictHostKeyChecking=no ${remoteHost} '
+                            ssh -i \$SSH_KEY -o StrictHostKeyChecking=no ${remoteHost} '
                                 cd /home/ubuntu &&
-                                echo "📌 Pulling latest image..."
+                                echo "📌 Pulling latest image..." &&
                                 docker compose pull &&
 
-                                echo "📌 Restarting containers..."
+                                echo "📌 Restarting containers..." &&
                                 docker compose up -d &&
 
                                 echo "✔ Deployment completed successfully."
@@ -118,7 +112,6 @@ pipeline {
                 }
             }
         }
-
     }
 
     post {
