@@ -1,23 +1,25 @@
 #!/bin/bash
 
-SERVER=$1         # EC2 IP
-IMAGE=$2          # Full image name
-PORT=$3           # App port
-SSH_KEY=$4        # Path to private key file
+DOCKER_USER="sipserver"
+BRANCH=$(git rev-parse --abbrev-ref HEAD)
 
-if [[ -z "$SERVER" || -z "$IMAGE" || -z "$PORT" || -z "$SSH_KEY" ]]; then
-    echo "Usage: ./deploy.sh <server-ip> <image> <port> <ssh-key>"
+# Auto tag using timestamp
+TAG=$(date +%s)
+
+echo "Current Branch: $BRANCH"
+
+if [[ "$BRANCH" == "dev" ]]; then
+    IMAGE="$DOCKER_USER/devrepo:$TAG"
+elif [[ "$BRANCH" == "master" ]]; then
+    IMAGE="$DOCKER_USER/prodrepo:$TAG"
+else
+    echo "Unknown branch. Only dev and master are supported."
     exit 1
 fi
 
-echo "Deploying $IMAGE to $SERVER..."
+echo "Building Docker Image: $IMAGE"
 
-ssh -i "$SSH_KEY" -o StrictHostKeyChecking=no ubuntu@$SERVER "
-    docker pull $IMAGE &&
-    docker stop app || true &&
-    docker rm app || true &&
-    docker run -d -p $PORT:$PORT --name app $IMAGE
-"
+docker build -t $IMAGE .
 
-echo "---------------------------------------"
-echo "Deployment Completed!"
+echo "Build Completed!"
+echo "$IMAGE" > image.txt   # Export for Jenkins use
