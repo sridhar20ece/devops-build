@@ -60,11 +60,11 @@ pipeline {
 
         stage("Push Image") {
             steps {
-                sh '''
-                    IMAGE=$(cat image.txt)
-                    echo "Pushing $IMAGE"
-                    docker push $IMAGE
-                '''
+                sh """
+                    IMAGE=\$(cat image.txt)
+                    echo "Pushing \$IMAGE"
+                    docker push \$IMAGE
+                """
             }
         }
 
@@ -78,7 +78,7 @@ pipeline {
                 )]) {
                     sh """
                         chmod +x deploy.sh
-                        IMAGE=$(cat image.txt)
+                        IMAGE=\$(cat image.txt)
                         ./deploy.sh 172.31.22.3 \$IMAGE 80 \$SSH_KEY
                     """
                 }
