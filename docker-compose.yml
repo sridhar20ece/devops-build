@@ -2,12 +2,7 @@ version: "3.9"
 
 services:
   web:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    container_name: apache_web
+    image: sipserver/devrepo:latest   # or variable tag
     ports:
       - "80:80"
-    restart: unless-stopped
-    volumes:
-      - ./build:/var/www/html  # Optional: live sync during development
+    restart: always
