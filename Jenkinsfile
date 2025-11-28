@@ -84,7 +84,12 @@ pipeline {
                 }
             }
         }
+ 
 
+        script {
+           env.IMAGE = sh(script: "cat image.txt | tr -d '\\n'", returnStdout: true).trim()
+           echo "Using IMAGE = ${env.IMAGE}"
+        }
         stage("Deploy using docker-compose") {
             when { expression { env.ACTUAL_BRANCH == "dev" } }
             steps {
