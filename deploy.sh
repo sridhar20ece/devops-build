@@ -18,6 +18,6 @@ ssh -i "$SSH_KEY" -o StrictHostKeyChecking=no ubuntu@$SERVER "
     docker rm app || true &&
     docker run -d -p $PORT:$PORT --name app $IMAGE
 "
-
+eccho "$$$$$$$$$$$$"
 echo "---------------------------------------"
 echo "Deployment Completed!"
