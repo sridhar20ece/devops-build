@@ -2,7 +2,7 @@ version: "3.9"
 
 services:
   web:
-    image: sipserver/devrepo:latest   # or variable tag
+    image: ${IMAGE}   # or variable tag
     ports:
       - "80:80"
     restart: always

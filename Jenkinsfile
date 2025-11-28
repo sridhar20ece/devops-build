@@ -104,10 +104,10 @@ pipeline {
                             ssh -i \$SSH_KEY -o StrictHostKeyChecking=no ${remoteHost} '
                                 cd /home/ubuntu &&
                                 echo "📌 Pulling latest image..." &&
-                                docker compose pull &&
+                                IMAGE=$IMAGE docker compose pull &&
 
                                 echo "📌 Restarting containers..." &&
-                                docker compose up -d &&
+                                IMAGE=$IMAGE docker compose up -d &&
 
                                 echo "✔ Deployment completed successfully."
                             '
