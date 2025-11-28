@@ -97,38 +97,6 @@ pipeline {
             }
         }
 
-        stage("Deploy using docker-compose") {
-            when { expression { env.ACTUAL_BRANCH == "dev" } }
-            steps {
-                withCredentials([sshUserPrivateKey(
-                    credentialsId: 'dev-server-ssh-key',
-                    keyFileVariable: 'SSH_KEY',
-                    usernameVariable: 'SSH_USER'
-                )]) {
-                    script {
-                        def remoteHost = "ubuntu@172.31.22.3"
-
-                        sh """
-                            echo "📌 Copying docker-compose.yml to remote server..."
-                            scp -i \$SSH_KEY -o StrictHostKeyChecking=no docker-compose.yml ${remoteHost}:/home/ubuntu/
-
-                            echo "📌 Deploying latest Docker image via docker-compose..."
-                            ssh -i \$SSH_KEY -o StrictHostKeyChecking=no ${remoteHost} '
-                                cd /home/ubuntu &&
-                                echo "📌 Pulling latest image..." &&
-                                IMAGE=${env.IMAGE} docker compose pull &&
-
-                                echo "📌 Restarting containers..." &&
-                                IMAGE=${env.IMAGE} docker compose up -d &&
-
-                                echo "✔ Deployment completed successfully."
-                            '
-                        """
-                    }
-                }
-            }
-        }
-
     }
 
     post {
