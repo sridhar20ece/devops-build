@@ -68,6 +68,19 @@ pipeline {
             }
         }
 
+        stage("Load IMAGE variable") {
+            steps {
+                script {
+                    env.IMAGE = sh(
+                        script: "cat image.txt | tr -d '\\n'",
+                        returnStdout: true
+                    ).trim()
+
+                    echo "Using IMAGE = ${env.IMAGE}"
+                }
+            }
+        }
+
         stage("Deploy using deploy.sh") {
             when { expression { env.ACTUAL_BRANCH == "dev" } }
             steps {
@@ -78,18 +91,12 @@ pipeline {
                 )]) {
                     sh """
                         chmod +x deploy.sh
-                        IMAGE=\$(cat image.txt)
-                        ./deploy.sh 172.31.22.3 \$IMAGE 80 \$SSH_KEY
+                        ./deploy.sh 172.31.22.3 ${env.IMAGE} 80 \$SSH_KEY
                     """
                 }
             }
         }
- 
 
-        script {
-           env.IMAGE = sh(script: "cat image.txt | tr -d '\\n'", returnStdout: true).trim()
-           echo "Using IMAGE = ${env.IMAGE}"
-        }
         stage("Deploy using docker-compose") {
             when { expression { env.ACTUAL_BRANCH == "dev" } }
             steps {
@@ -109,10 +116,10 @@ pipeline {
                             ssh -i \$SSH_KEY -o StrictHostKeyChecking=no ${remoteHost} '
                                 cd /home/ubuntu &&
                                 echo "📌 Pulling latest image..." &&
-                                IMAGE=$IMAGE docker compose pull &&
+                                IMAGE=${env.IMAGE} docker compose pull &&
 
                                 echo "📌 Restarting containers..." &&
-                                IMAGE=$IMAGE docker compose up -d &&
+                                IMAGE=${env.IMAGE} docker compose up -d &&
 
                                 echo "✔ Deployment completed successfully."
                             '
