@@ -88,13 +88,17 @@ pipeline {
         stage("Deploy using docker-compose") {
             when { expression { env.ACTUAL_BRANCH == "dev" } }
             steps {
-                script {
-                    def remoteHost = "ubuntu@172.31.22.3"
+                withCredentials([sshUserPrivateKey(
+                    credentialsId: 'dev-server-ssh-key',
+                    keyFileVariable: 'SSH_KEY',
+                    usernameVariable: 'SSH_USER'
+                )]) {
+                    script {
+                        def remoteHost = "ubuntu@172.31.22.3"
 
-                    sshagent(['ssh-key-01']) {
                         sh """
                             echo "📌 Copying docker-compose.yml to remote server..."
-                            scp -o StrictHostKeyChecking=no docker-compose.yml ${remoteHost}:/home/ubuntu/
+                            scp -i \$SSH_KEY -o StrictHostKeyChecking=no docker-compose.yml ${remoteHost}:/home/ubuntu/
 
                             echo "📌 Deploying latest Docker image via docker-compose..."
                             ssh -i \$SSH_KEY -o StrictHostKeyChecking=no ${remoteHost} '
@@ -112,6 +116,7 @@ pipeline {
                 }
             }
         }
+
     }
 
     post {

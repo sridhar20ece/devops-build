@@ -1,21 +1,23 @@
 #!/bin/bash
-SERVER_IP=$1
-SSH_USER=$2
-SSH_KEY=$3
 
-IMAGE=$(cat image.txt)
+SERVER=$1         # EC2 IP
+IMAGE=$2          # Full image name
+PORT=$3           # App port
+SSH_KEY=$4        # Path to private key file
 
-echo "Deploying $IMAGE to $SERVER_IP"
+if [[ -z "$SERVER" || -z "$IMAGE" || -z "$PORT" || -z "$SSH_KEY" ]]; then
+    echo "Usage: ./deploy.sh <server-ip> <image> <port> <ssh-key>"
+    exit 1
+fi
 
-ssh -o StrictHostKeyChecking=no -i $SSH_KEY $SSH_USER@$SERVER_IP <<EOF
+echo "Deploying $IMAGE to $SERVER..."
 
-    echo "Pulling image..."
-    docker pull $IMAGE
+ssh -i "$SSH_KEY" -o StrictHostKeyChecking=no ubuntu@$SERVER "
+    docker pull $IMAGE &&
+    docker stop app || true &&
+    docker rm app || true &&
+    docker run -d -p $PORT:$PORT --name app $IMAGE
+"
 
-    echo "Stopping old container..."
-    docker rm -f devapp || true
-
-    echo "Starting new container..."
-    docker run -d --name devapp -p 80:80 $IMAGE
-
-EOF
+echo "---------------------------------------"
+echo "Deployment Completed!"
